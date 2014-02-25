@@ -1,0 +1,99 @@
+\documentclass[a4paper,12pt,final]{article}
+% Pour une impression recto verso, utilisez plutôt ce documentclass :
+%\documentclass[a4paper,11pt,twoside,final]{article}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english,francais]{babel}
+\usepackage[pdftex]{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage[french]{varioref}
+\usepackage{easylist}
+\usepackage{eurosym}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{wrapfig}
+\usepackage{floatrow}
+\usepackage{fancyhdr}
+\usepackage{nameref}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{chngpage}
+\usepackage{amsmath}
+\usepackage{multirow}
+
+\newcommand{\reporttitle}{Développements logiciels autour de GDL}     % Titre
+\newcommand{\reportauthor}{Nodar \textsc{Kasradze}} % Auteur
+\newcommand{\reportsubject}{Stage de fin d'étude} % Sujet
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\setlength{\parskip}{1ex} % Espace entre les paragraphes
+
+\hypersetup{
+    pdftitle={\reporttitle},%
+    pdfauthor={\reportauthor},%
+    pdfsubject={\reportsubject},%
+    pdfkeywords={rapport} {vos} {mots} {clés},%
+    linktoc=all
+}
+
+\fancypagestyle{firststyle}
+{
+   \fancyhf{}
+   \renewcommand{\headrulewidth}{0pt}
+   \fancyfoot[C]{\thepage}
+}
+
+
+\fancypagestyle{newfancy}
+{
+\fancyhf{}
+\fancyhead[R]{\itshape   \leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+}
+
+\setlength{\headheight}{14.5pt}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\begin{document}
+  \include{title}
+   \pagestyle{empty}
+  \cleardoublepage % Dans le cas du recto verso, ajoute une page blanche si besoin
+  \begingroup
+  \hypersetup{linkcolor=black}
+  \tableofcontents % Table des matières
+  \endgroup
+  \sloppy          % Justification moins stricte : des mots ne dépasseront pas des paragraphes
+  \cleardoublepage
+  \pagestyle{firststyle}
+  \include{remerciements}
+  \cleardoublepage
+  \include{resume}
+  \cleardoublepage
+  \include{intro}
+  \cleardoublepage
+  \pagestyle{newfancy}
+  \include{partie1}
+  \cleardoublepage
+  \include{cahier}
+  \cleardoublepage
+  \include{partie2}
+  \cleardoublepage
+  \pagestyle{firststyle}
+  \include{concl}
+  \cleardoublepage
+  \include{references}
+  \cleardoublepage
+  \include{figures}
+  \cleardoublepage
+  \include{abreviations}
+  \cleardoublepage
+  \include{annexes}  
+\end{document}
+

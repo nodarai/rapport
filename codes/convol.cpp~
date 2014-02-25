@@ -1,0 +1,152 @@
+
+#ifdef CONVOL_BYTE__
+
+template<>
+BaseGDL* Data_<SpDByte>::Convol( BaseGDL* kIn, BaseGDL* scaleIn, BaseGDL* bias, bool center, bool normalize, int edgeMode)
+{
+  Data_<SpDLong>* kernel = static_cast<Data_<SpDLong>*>( kIn);
+  DLong scale = (*static_cast<Data_<SpDInt>*>( scaleIn))[0];
+  // the result to be returned
+  Data_* res = New( dim, BaseGDL::ZERO);
+  DInt* ker = static_cast<DInt*>( kernel->DataAddr());
+  Data_<SpDLong>* biast=static_cast<Data_<SpDLong>*>( bias);
+  DLong* biasd = static_cast<DLong*>( biast->DataAddr());
+#else
+
+#ifdef CONVOL_UINT__
+
+template<>
+BaseGDL* Data_<SpDUInt>::Convol( BaseGDL* kIn, BaseGDL* scaleIn, BaseGDL* bias, bool center, bool normalize, int edgeMode)
+{
+  Data_* kernel = static_cast<Data_*>( kIn);
+  DLong scale = (*static_cast<Data_<SpDUInt>*>( scaleIn))[0];
+  // the result to be returned
+  Data_* res = New( dim, BaseGDL::ZERO);
+  Ty* ker = &(*kernel)[0];
+  Data_* biast=static_cast<Data_*>( bias);
+  Ty* biasd = &(*biast)[0];
+#else
+
+
+template<class Sp>
+BaseGDL* Data_<Sp>::Convol( BaseGDL* kIn, BaseGDL* scaleIn, BaseGDL* bias, bool center, bool normalize, int edgeMode)
+{
+  Data_* kernel = static_cast<Data_*>( kIn);
+  Ty scale = (*static_cast<Data_*>( scaleIn))[0];
+  // the result to be returned
+  Data_* res = New( this->dim, BaseGDL::ZERO);
+  Ty* ker = &(*kernel)[0];
+  Data_* biast=static_cast<Data_*>( bias);
+  Ty* biasd = &(*biast)[0];
+#endif
+#endif
+
+  if( scale == this->zero) scale = 1;
+
+  SizeT nA = N_Elements();
+  SizeT nK = kernel->N_Elements();
+
+  if(normalize)
+    { 
+
+      DDouble tmp=0;
+      for ( SizeT ind=0; ind<nK; ind++ )
+	tmp+=abs(ker[ind]);
+      scale=tmp;
+
+#ifdef CONVOL_BYTE__
+	  tmp=0;
+	  for ( SizeT ind=0; ind<nK; ind++ )
+	    if(ker[ind]<0)
+	      tmp+=abs(ker[ind]);
+	  biasd[0]=tmp*255/scale;
+	  if( biasd[0]<0)
+	    biasd[0]=0;
+	  else  
+	    if( biasd[0]>255) 
+	      biasd[0]=255;
+#endif
+
+    }
+
+  SizeT nDim = this->Rank(); // number of dimension to run over
+
+  SizeT kStride[MAXRANK+1];
+  kernel->Dim().Stride( kStride, nDim);
+
+  // setup kIxArr[ nDim * nK] the offset array
+  // this handles center
+  long* kIxArr = new long[ nDim * nK];
+  ArrayGuard<long> kIxArrGuard( kIxArr); // guard it
+  for( SizeT k=0; k<nK; ++k)
+    {
+      kIxArr[ k * nDim + 0] = -(k % kernel->Dim( 0));
+      if( center) kIxArr[ k * nDim + 0] = -(kIxArr[ k * nDim + 0] + 
+					    kernel->Dim( 0) / 2);
+      for( SizeT kSp=1; kSp<nDim; ++kSp)
+	{
+	  SizeT kDim = kernel->Dim( kSp);
+	  if( kDim == 0) kDim = 1;
+	  kIxArr[ k * nDim + kSp] = -((k / kStride[kSp]) % kDim);
+	  if( center) kIxArr[ k * nDim + kSp] = -(kIxArr[ k * nDim + kSp] + 
+						  kDim / 2);
+	}
+    }
+
+  SizeT  aStride[ MAXRANK + 1];
+  this->dim.Stride( aStride, nDim);
+
+  long  aInitIx[ MAXRANK+1];
+  for( SizeT aSp=0; aSp<=nDim; ++aSp) aInitIx[ aSp] = 0;
+
+  bool  regArr[ MAXRANK];
+
+  long  aBeg[ MAXRANK];
+  long  aEnd[ MAXRANK];
+  for( SizeT aSp=0; aSp<nDim; ++aSp) 
+    {
+      SizeT kDim = kernel->Dim( aSp);
+      if( kDim == 0) kDim = 1;
+      aBeg[ aSp] = (center) ? kDim/2 : kDim-1; // >= 
+      regArr[ aSp] = !aBeg[ aSp];
+      aEnd[ aSp] = (center) ? this->dim[aSp]-(kDim-1)/2 : this->dim[aSp]; // <
+    }
+
+  Ty* ddP = &(*this)[0];
+
+  // some loop constants
+  SizeT dim0  = this->dim[0];
+  SizeT aBeg0 = aBeg[0];
+  SizeT aEnd0 = aEnd[0];
+  SizeT dim0_1     = dim0 - 1;
+  SizeT dim0_aEnd0 = dim0 - aEnd[0];
+  SizeT kDim0      = kernel->Dim( 0);
+  SizeT	kDim0_nDim = kDim0 * nDim;
+
+#define INCLUDE_CONVOL_INC_CPP 
+
+  if( edgeMode == 0)
+    {
+#include "convol_inc0.cpp"
+    }
+  else if( edgeMode == 1)
+    {
+#include "convol_inc1.cpp"
+    }
+  else if( edgeMode == 2)
+    {
+#include "convol_inc2.cpp"
+    }
+
+
+#undef INCLUDE_CONVOL_INC_CPP
+
+
+  if(biasd[0]!=this->zero)
+    {
+      for(SizeT indi=0;indi<nA;indi++)
+	(*res)[indi]+=biasd[0];
+    }
+
+  return res;
+ }
